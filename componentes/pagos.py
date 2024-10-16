@@ -25,6 +25,7 @@ def crear_tabla_pagos(pagos):
         DataColumn(Text("Estado", weight=FontWeight.BOLD, color=COLOR_TEXTO)),
         DataColumn(Text("Precio", weight=FontWeight.BOLD, color=COLOR_TEXTO)),
         DataColumn(Text("Fecha", weight=FontWeight.BOLD, color=COLOR_TEXTO)),
+        DataColumn(Text("Tipo de pago", weight=FontWeight.BOLD, color=COLOR_TEXTO)),
     ]
 
     filas = []
@@ -37,6 +38,7 @@ def crear_tabla_pagos(pagos):
                     DataCell(Text(pago.get('estado', 'N/A'), color=COLOR_TEXTO)),
                     DataCell(Text(pago.get('precio', 'N/A'), color=COLOR_TEXTO)),
                     DataCell(Text(pago.get('fecha_turno', 'N/A'), color=COLOR_TEXTO)),
+                    DataCell(Text(pago.get('tipo_pago', 'N/A'), color=COLOR_TEXTO)),
                 ],
                 color=COLOR_TABLA_ALTERNADO if i % 2 == 0 else colors.WHITE,  # Alternar colores de filas
             )
