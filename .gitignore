@@ -8,3 +8,4 @@ __pycache__/
 
 # Archivos de configuración de entorno
 .env
+config/credenciales.json
