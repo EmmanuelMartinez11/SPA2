@@ -94,7 +94,7 @@ def pantalla_contenido(page, user_data, cambiar_a_contenido):
         if pantalla == "Servicios":
             contenedorDerecha.content = Servicios(page,user_data, db)  # Pasar db a Servicios
         elif pantalla == "Pagos":
-            contenedorDerecha.content = Pagos(user_data, db)
+            contenedorDerecha.content = Pagos(page,user_data, db)
         elif pantalla == "Cerrar sesión":
             cerrar_sesion()  # Al hacer clic en "Cerrar sesión"
         else:
@@ -113,7 +113,7 @@ def pantalla_contenido(page, user_data, cambiar_a_contenido):
     if user_data['rol'] in ['Administrador', 'Especialista en tratamientos corporales', 'Especialista en facial', 'Esteticista', 'Masajista']:
         contenido_inicial = Servicios(page,user_data, db)  # Pasar db a Servicios
     elif user_data['rol'] == 'Secretario/a':
-        contenido_inicial = Pagos()
+        contenido_inicial = Pagos(page, user_data, db)
     else:
         contenido_inicial = Text("No tiene permisos para acceder a esta sección.")
     

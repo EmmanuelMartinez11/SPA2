@@ -53,9 +53,10 @@ def crear_tabla_pagos(pagos):
         horizontal_lines=border.BorderSide(1, "grey"),  # Líneas horizontales
     )
 
-def Pagos(user_data, db):
+def Pagos(page, user_data, db):
     """
-    Componente Pagos que muestra una tabla con la información de los pagos.
+    Componente Pagos que muestra una tabla con la información de los pagos 
+    y permite filtrar por nombre de cliente.
     """
 
     # Obtener los pagos iniciales
@@ -64,11 +65,35 @@ def Pagos(user_data, db):
     # Crear la tabla de pagos
     tabla_pagos = crear_tabla_pagos(pagos)
 
+    def actualizar_tabla(e=None):
+        pagos_filtrados = obtener_pagos(db)
+
+        # Filtrar por cliente si se proporciona
+        cliente_filtro = textfield_cliente.value.strip()  # Accede a textfield_cliente
+        if cliente_filtro:
+            pagos_filtrados = [
+                pago for pago in pagos_filtrados 
+                if cliente_filtro.lower() in pago.get('cliente', '').lower()
+            ]
+
+        # Actualizar la tabla con los pagos filtrados
+        tabla_pagos.rows = crear_tabla_pagos(pagos_filtrados).rows
+        page.update()
+
+    # Campo de texto para buscar por nombre de cliente (movido aquí)
+    textfield_cliente = TextField(
+        label="Buscar por cliente",
+        on_change=actualizar_tabla,
+        color=COLOR_TEXTO,
+        width=200
+    )
+
     # Layout de la página
     return Container(
         content=Column(controls=[
             Text("Esta es la pantalla de Pagos.", color="black"),
-            tabla_pagos,  # Mostrar la tabla de pagos
+            textfield_cliente,
+            tabla_pagos,
         ]),
         bgcolor=COLOR_FONDO,
         padding=10,
