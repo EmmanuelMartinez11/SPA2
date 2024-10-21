@@ -132,7 +132,7 @@ def SideBar(cambiarPantalla, user_data):
     sidebar_container = Container(
         padding=0,
         margin=0,
-        bgcolor="#202B4B",
+        bgcolor="#CD849A",
         width=300 if sidebar_expandido else 70,  # Ajustar el ancho según el estado
         animate=animation.Animation(300, "ease"),
         alignment=alignment.center,
