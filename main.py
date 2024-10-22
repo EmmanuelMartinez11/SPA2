@@ -89,6 +89,7 @@ def pantalla_inicio_sesion(page, cambiar_pantalla):
 
 # Pantalla principal con sidebar y contenedor dinámico
 def pantalla_contenido(page, user_data, cambiar_a_contenido):
+    
     # Callback para cambiar el contenido del contenedor principal
     def cambiar_pantalla(pantalla):
         if pantalla == "Servicios":

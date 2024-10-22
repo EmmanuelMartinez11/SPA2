@@ -1,13 +1,15 @@
 import os
 from datetime import datetime
+import pandas as pd  # Asegúrate de que pandas esté instalado
 from flet import *
-from fpdf import FPDF  # Asegúrate de que fpdf está instalado
-from random import randint  # Importa randint desde random
+from fpdf import FPDF
+from random import randint
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.base import MIMEBase
 from email import encoders
+
 
 # Paleta de colores
 COLOR_BOTONES = "#CD4875"
@@ -27,7 +29,32 @@ def obtener_pagos(db):
     return pagos
 
 # Función para crear la tabla con los datos de los pagos
+def combinar_filas(pagos):
+    # Convertir la lista de pagos a un DataFrame
+    df = pd.DataFrame(pagos)
+    
+    # Asegurarse de que la columna de fecha sea del tipo datetime
+    df['fecha_turno'] = pd.to_datetime(df['fecha_turno'], format='%d/%m/%Y %H:%M', errors='coerce')
+
+    # Crear una nueva columna solo con la fecha (sin la hora)
+    df['fecha'] = df['fecha_turno'].dt.date
+
+    # Agrupar por cliente y fecha, y combinar los campos
+    df_combined = df.groupby(['cliente', 'fecha']).agg({
+        'servicio': lambda x: '\n'.join(x),  # Combina los servicios
+        'estado': lambda x: '\n'.join(x),  # Combina los estados
+        'precio': lambda x: '\n'.join(map(str, x)),  # Combina los precios
+        'tipo_pago': lambda x: '\n'.join(x),  # Combina los tipos de pago
+        'fecha_turno': lambda x: '\n'.join(x.dt.strftime('%d/%m/%Y %H:%M')),  # Combina las fechas formateadas
+    }).reset_index()
+
+    # Convertir de nuevo a una lista de diccionarios para crear las filas de la tabla
+    return df_combined.to_dict(orient='records')
+
+# Función para crear la tabla con los datos de los pagos
 def crear_tabla_pagos(pagos):
+    pagos_combined = combinar_filas(pagos)  # Combinar filas antes de crear la tabla
+
     columnas = [
         DataColumn(Text("Seleccionar", weight=FontWeight.BOLD, color=COLOR_TEXTO)),
         DataColumn(Text("Cliente", weight=FontWeight.BOLD, color=COLOR_TEXTO)),
@@ -39,30 +66,31 @@ def crear_tabla_pagos(pagos):
     ]
 
     filas = []
-    for i, pago in enumerate(pagos):
-        if pago.get('estado', '') == 'Pagado':  # Asegúrate de que sea "pagado"
-            filas.append(
-                DataRow(
-                    cells=[
-                        DataCell(Checkbox(value=False, on_change=lambda e, idx=i: actualizar_seleccion(idx))),
-                        DataCell(Text(pago.get('cliente', 'N/A'), color=COLOR_TEXTO)),
-                        DataCell(Text(pago.get('servicio', 'N/A'), color=COLOR_TEXTO)),
-                        DataCell(Text(pago.get('estado', 'N/A'), color=COLOR_TEXTO)),
-                        DataCell(Text(str(pago.get('precio', 'N/A')), color=COLOR_TEXTO)),  # Convertir a string
-                        DataCell(Text(pago.get('fecha_turno', 'N/A'), color=COLOR_TEXTO)),
-                        DataCell(Text(pago.get('tipo_pago', 'N/A'), color=COLOR_TEXTO)),
-                    ],
-                    color=COLOR_TABLA_ALTERNADO if i % 2 == 0 else colors.WHITE,  # Alternar colores de filas
-                )
+    for i, pago in enumerate(pagos_combined):
+        filas.append(
+            DataRow(
+                cells=[
+                    DataCell(Checkbox(value=False, on_change=lambda e, idx=i: actualizar_seleccion(idx))),
+                    DataCell(Text(pago.get('cliente', 'N/A'), color=COLOR_TEXTO)),
+                    DataCell(Text(pago.get('servicio', 'N/A'), color=COLOR_TEXTO)),
+                    DataCell(Text(pago.get('estado', 'N/A'), color=COLOR_TEXTO)),
+                    DataCell(Text(str(pago.get('precio', 'N/A')), color=COLOR_TEXTO)),
+                    DataCell(Text(pago.get('fecha_turno', 'N/A'), color=COLOR_TEXTO)),
+                    DataCell(Text(pago.get('tipo_pago', 'N/A'), color=COLOR_TEXTO)),
+                ],
+                color=COLOR_TABLA_ALTERNADO if i % 2 == 0 else colors.WHITE,
             )
+        )
+
     return DataTable(
         columns=columnas,
         rows=filas,
-        heading_row_color=COLOR_TABLA_HEADER,  # Color de fondo para el encabezado
-        border=border.all(1, "grey"),  # Borde de la tabla
-        vertical_lines=border.BorderSide(1, "grey"),  # Líneas verticales
-        horizontal_lines=border.BorderSide(1, "grey"),  # Líneas horizontales
+        heading_row_color=COLOR_TABLA_HEADER,
+        border=border.all(1, "grey"),
+        vertical_lines=border.BorderSide(1, "grey"),
+        horizontal_lines=border.BorderSide(1, "grey"),
     )
+
 
 # Variable para mantener el estado de selección
 selecciones = []
@@ -78,7 +106,7 @@ def generar_factura(clientes, servicios, email):
     pdf = FPDF()
 
     # Asegúrate de que la carpeta de facturas exista
-    directorio_facturas = "E:\\Proyecto2\\SPA2\\facturas"
+    directorio_facturas = "facturas"
     os.makedirs(directorio_facturas, exist_ok=True)
 
     # Crear la primera página
