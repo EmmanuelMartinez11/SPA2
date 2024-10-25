@@ -2,6 +2,7 @@ from flet import *
 from datetime import datetime
 from collections import Counter
 
+
 # Paleta de colores
 COLOR_BOTONES = "#f4fef8"
 COLOR_TABLA_HEADER = "#ebd975"
@@ -147,7 +148,34 @@ def Servicios(page, user_data, db):
     # Crear un AlertDialog para mostrar mensajes de error
     dlg_error = AlertDialog(title=Text("Error"))
     page.dialog = dlg_error  # Asignar el AlertDialog a page.dialog
+   
+    def seleccionar_fecha(e):
+        date_picker_dialog.open = True
+        page.update()
+    
+    def actualizar_fecha(e):
+        date_picker.value = e.control.value
+        textfield_fecha.value = e.control.value.strftime("%d-%m-%Y")  # Formatear la fecha para el TextField
+        actualizar_tabla()
+        page.update()
 
+    textfield_fecha = TextField(
+        label="Selecciona una fecha (DD-MM-AAAA):",
+        color=COLOR_TEXTO
+    )
+
+    # Crear el DatePicker (calendario)
+    date_picker_dialog = DatePicker(
+        on_change=actualizar_fecha,
+    )
+
+    # Crear el botón para abrir el calendario
+    boton_calendario = IconButton(
+        icon=icons.CALENDAR_MONTH,
+        on_click=seleccionar_fecha,
+        bgcolor=COLOR_BOTONES,
+        icon_color=COLOR_TEXTO,
+    )
     # Función para actualizar la tabla de turnos al seleccionar un servicio o especialidad del Dropdown
     def actualizar_tabla(e=None):
         # Obtener todos los turnos según el rol del usuario
@@ -163,28 +191,31 @@ def Servicios(page, user_data, db):
             especialidad_filtro = dropdown_especialidad.value
             if especialidad_filtro != "Mostrar todas":
                 turnos = [turno for turno in turnos if turno.get('especialidad') == especialidad_filtro]
-        
-
-        # Filtrar por cliente si se proporciona
+         # Filtrar por cliente si se proporciona
         cliente_filtro = textfield_cliente.value.strip()
         if cliente_filtro:
             turnos = [turno for turno in turnos if cliente_filtro.lower() in turno.get('cliente', '').lower()]
 
-        # Filtrar por fecha si se selecciona una fecha en el campo de fecha
+        # Filtrar por fecha seleccionada en el DatePicker
         fecha_filtro = textfield_fecha.value.strip()
 
-        # Validar si la fecha ingresada es válida (formato correcto: AAAA-MM-DD)
+    # Validar si la fecha ingresada es válida (formato correcto: DD-MM-AAAA)
         if fecha_filtro:
             try:
-                # Validar que la fecha ingresada esté en el formato correcto (DD-MM-AAAA)
+            # Validar que la fecha ingresada esté en el formato correcto (DD-MM-AAAA)
                 datetime.strptime(fecha_filtro, '%d-%m-%Y')
-                
-                # Filtrar los turnos que coincidan con la fecha (asegurando el formato correcto)
-                turnos = [turno for turno in turnos if turno.get('fecha_turno', '').strftime('%d-%m-%Y') == fecha_filtro]
-        
+
+            # Convertir la fecha al formato AAAA-MM-DD para la comparación
+                fecha_filtro_dt = datetime.strptime(fecha_filtro, '%d-%m-%Y').date()
+
+            # Filtrar los turnos que coincidan con la fecha
+                turnos = [turno for turno in turnos if turno.get('fecha_turno').date() == fecha_filtro_dt]
+
             except ValueError:
                 page.dialog.show_alert("Fecha no válida. Usa el formato DD-MM-AAAA")
-        # Actualizar la tabla con los turnos filtrados
+                return  # Salir de la función si la fecha no es válida
+
+        tabla_turnos.rows.clear() 
         tabla_turnos.rows = crear_tabla_turnos(turnos).rows
         page.update()
 
@@ -236,7 +267,10 @@ def Servicios(page, user_data, db):
         on_change=actualizar_tabla,  # Llamar a la función cuando se cambie el valor
         color=COLOR_TEXTO  # Color del texto en el campo de búsqueda
     )
-    
+    # DatePicker para seleccionar la fecha
+    date_picker = DatePicker(
+        on_change=actualizar_tabla,  # Llamar a la función cuando se seleccione una fecha
+    )
     # Campo de texto para ingresar fecha manualmente (con validación)
     textfield_fecha = TextField(
         label="Selecciona una fecha (DD-MM-AAAA):",
@@ -252,15 +286,17 @@ def Servicios(page, user_data, db):
 
     # Layout de la página: solo mostrar filtros para Administrador
     controls = [
-        Row([textfield_cliente, textfield_fecha]),  # Agregar el campo de texto y el selector de fecha
-        Text("Tabla de Turnos", size=20,color=COLOR_TEXTO),  # Título de la tabla
+        Row([textfield_cliente]),
+        Row([textfield_fecha, boton_calendario]),   # Quitar datepicker_fecha del Row
+        Text("Tabla de Turnos", size=20, color=COLOR_TEXTO),  # Título de la tabla
         tabla_turnos,  # Mostrar la tabla de turnos
     ]
+    page.overlay.append(date_picker_dialog)
+
 
     # Si el usuario es Administrador, añadir los filtros de servicio y especialidad
     if user_data['rol'] == 'Administrador':
         controls.insert(0, Row(controls=[dropdown_servicio, dropdown_especialidad]))
-    
         def on_click_mostrar_estadisticas(e):  # <-- Mover la lógica aquí
             servicio_filtro = dropdown_servicio.value if dropdown_servicio.value != "Mostrar todas" else None
             especialidad_filtro = dropdown_especialidad.value if dropdown_especialidad.value != "Mostrar todas" else None
