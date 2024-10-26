@@ -45,4 +45,3 @@ def enviar_factura_por_email(cliente_email, archivo_pdf):
 
 # Ejemplo de uso
 # enviar_factura_por_email("cliente@example.com", "ruta/al/archivo.pdf")
-
