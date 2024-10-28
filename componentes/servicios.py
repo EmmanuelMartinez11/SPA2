@@ -1,6 +1,11 @@
+import os
+from random import randint
+import threading
+import time
 from flet import *
 from datetime import datetime
 from collections import Counter
+from fpdf import FPDF
 
 
 # Paleta de colores
@@ -9,6 +14,98 @@ COLOR_TABLA_HEADER = "#ebd975"
 COLOR_TABLA_ALTERNADO = "#f4fef8"
 COLOR_FONDO = "#f4fef8"
 COLOR_TEXTO = "#74994E"  # Color del texto (oscuro)
+
+def mostrar_pdf_con_delay(pdf_file_path, delay=5):
+    # Función para abrir el PDF después de un retraso
+    time.sleep(delay)
+    os.startfile(pdf_file_path)
+
+def generar_pdf(datos_pagos):
+    pdf = FPDF()
+    pdf.set_auto_page_break(auto=True, margin=15)
+    pdf.add_page()
+
+    # Establecer márgenes y fuente
+    pdf.set_left_margin(15)
+    pdf.set_right_margin(15)
+    pdf.set_font("Arial", size=10)
+    
+    # Encabezado con el logo y los datos de la empresa
+    logo_path = "assets/logo_spa.png"  # Cambia la ruta según tu logo
+    pdf.image(logo_path, x=(pdf.w - 33) / 2, y=8, w=33)  # Centrar el logo
+    pdf.set_y(40)  # Ajustar posición para el encabezado
+
+    # Título del informe
+    pdf.set_font("Arial", "B", 14)
+    pdf.cell(0, 10, "SPA SENTIRSE BIEN", ln=True, align="C")
+    pdf.set_font("Arial", size=12)
+    pdf.cell(0, 10, txt=f"INFORME N° {randint(1000, 9999)}", ln=True, align="L")
+    pdf.cell(0, 10, f"Fecha: {datetime.now().strftime('%d/%m/%Y')}", ln=True, align="L")
+    pdf.ln(10)
+
+    # Líneas de separación
+    pdf.set_draw_color(150, 150, 150)
+    pdf.line(15, pdf.get_y(), 195, pdf.get_y())
+    pdf.ln(5)
+
+    # Cuerpo del informe
+    pdf.set_font("Arial", "B", 12)
+    pdf.cell(0, 10, "Ingresos Totales", ln=True, align="L")
+    pdf.set_font("Arial", size=10)
+    pdf.cell(0, 10, f"${datos_pagos['ingresos_totales']:.2f}", ln=True, align="L")
+    pdf.ln(3)  # Espacio adicional
+
+    # Ingresos por servicio
+    pdf.set_font("Arial", "B", 12)
+    pdf.cell(0, 10, "Ingresos por Servicios", ln=True, align="L")
+    pdf.set_font("Arial", size=10)
+    for servicio, ingresos in datos_pagos["ingresos_por_servicio"].items():
+        pdf.cell(0, 10, f"{servicio}: ${ingresos:.2f}", ln=True, align="L")
+    pdf.ln(3)  # Espacio adicional
+
+    # Ingresos por especialidad
+    pdf.set_font("Arial", "B", 12)
+    pdf.cell(0, 10, "Ingresos por Especialidad", ln=True, align="L")
+    pdf.set_font("Arial", size=10)
+    for especialidad, ingresos in datos_pagos["ingresos_por_especialidad"].items():
+        pdf.cell(0, 10, f"{especialidad}: ${ingresos:.2f}", ln=True, align="L")
+    pdf.ln(3)  # Espacio adicional
+
+    # Ingresos por cliente
+    pdf.set_font("Arial", "B", 12)
+    pdf.cell(0, 10, "Ingresos por Clientes", ln=True, align="L")
+    pdf.set_font("Arial", size=10)
+    for cliente, ingresos in datos_pagos["ingresos_por_cliente"].items():
+        pdf.cell(0, 10, f"{cliente}: ${ingresos:.2f}", ln=True, align="L")
+    pdf.ln(5)  # Espacio adicional
+
+    # Resumen de ingresos
+    pdf.set_font("Arial", "B", 12)
+    pdf.cell(0, 10, "Resumen de Ingresos", ln=True, align="L")
+    pdf.set_font("Arial", size=10)
+    
+    # Promedio de ingresos por servicio
+    pdf.cell(0, 10, "Promedio de ingresos por servicio:", ln=True, align="L")
+    pdf.cell(0, 10, f"{datos_pagos['promedio_por_servicio']}", ln=True)
+    
+    # Cliente que más gasta
+    pdf.cell(0, 10, "Cliente que más gasta:", ln=True, align="L")
+    pdf.cell(0, 10, f"{datos_pagos['cliente_mas_gasta'] or 'N/A'}", ln=True, align="L")
+    
+    # Especialidad más rentable
+    pdf.cell(0, 10, "Especialidad más rentable:", ln=True, align="L")
+    pdf.cell(0, 10, f"{datos_pagos['especialidad_mas_rentable'] or 'N/A'}", ln=True, align="L")
+    
+    # Método de pago más usado
+    pdf.cell(0, 10, "Método de pago más usado:", ln=True, align="L")
+    pdf.cell(0, 10, f"{datos_pagos['metodo_pago_mas_usado'] or 'N/A'}", ln=True, align="L")
+
+    # Guardar y abrir el PDF
+    pdf_file_path = "estadisticas_pago.pdf"
+    pdf.output(pdf_file_path)
+
+    # Crear un nuevo hilo para abrir el PDF después de un retraso
+    threading.Thread(target=mostrar_pdf_con_delay, args=(pdf_file_path, 5)).start()
 
 # Función para obtener los turnos basados en el rol
 def obtener_turnos_por_rol(user_data, db):
@@ -400,6 +497,7 @@ def Servicios(page, user_data, db):
             page.overlay.append(dlg_modal) 
             dlg_modal.open = True
             page.update()
+            generar_pdf(datos_pagos)
         boton_estadisticas = ElevatedButton(
             text="Ver estadísticas de pagos",
             on_click=on_click_mostrar_estadisticas,  # <-- Asignar la función al botón
