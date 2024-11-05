@@ -31,7 +31,7 @@ def generar_pdf(datos_pagos):
     pdf.set_font("Arial", size=10)
     
     # Encabezado con el logo y los datos de la empresa
-    logo_path = "assets/logo_spa.png"  # Cambia la ruta según tu logo
+    logo_path = os.path.join(os.path.dirname(__file__), "assets", "logo_spa.png")
     pdf.image(logo_path, x=(pdf.w - 33) / 2, y=8, w=33)  # Centrar el logo
     pdf.set_y(40)  # Ajustar posición para el encabezado
 
