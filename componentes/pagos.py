@@ -4,6 +4,7 @@ from flet import *
 from fpdf import FPDF  # Asegúrate de que fpdf está instalado
 from random import randint  # Importa randint desde random
 import smtplib
+import sys
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.base import MIMEBase
@@ -77,8 +78,14 @@ def actualizar_seleccion(indice):
 def generar_factura(clientes, servicios, email):
     pdf = FPDF()
 
+    # Obtén la ruta del directorio de la aplicación
+    if getattr(sys, 'frozen', False):
+        directorio_aplicacion = os.path.dirname(sys.executable)
+    else:
+        directorio_aplicacion = os.path.dirname(os.path.abspath(__file__))
+
     # Asegúrate de que la carpeta de facturas exista
-    directorio_facturas = os.path.join(os.getcwd(), "facturas")
+    directorio_facturas = os.path.join(directorio_aplicacion, "facturas")
     os.makedirs(directorio_facturas, exist_ok=True)
 
     # Crear la primera página
@@ -88,7 +95,7 @@ def generar_factura(clientes, servicios, email):
     pdf.set_font("Arial", size=12, style="B")
 
     # Logo de la empresa
-    logo_path = "assets/logo_spa.png"  # Cambia la ruta según tu logo
+    logo_path = os.path.join(os.path.dirname(__file__), "assets", "logo_spa.png")
     pdf.image(logo_path, x=(pdf.w - 33) / 2, y=8, w=33)  # Centrar el logo
 
     # Nombre de la empresa
@@ -231,7 +238,7 @@ def Pagos(page, user_data, db):
         # Actualizar la tabla con los pagos filtrados
         tabla_pagos.rows = crear_tabla_pagos(pagos_filtrados).rows
         page.update()
-
+    
     # Función para generar la factura para los pagos filtrados
     def generar_factura_filtrada(e):
         clientes_seleccionados = []

@@ -4,9 +4,11 @@ from flet import *
 from componentes.sideBar import SideBar
 from componentes.servicios import Servicios
 from componentes.pagos import Pagos
+import os
 
 # Inicializar Firebase Admin
-cred = credentials.Certificate("config/credenciales.json")
+credenciales_path = os.path.join(os.path.dirname(__file__), 'config', 'credenciales.json')
+cred = credentials.Certificate(credenciales_path)
 firebase_admin.initialize_app(cred)
 db = firestore.client()
 
@@ -48,9 +50,10 @@ def pantalla_inicio_sesion(page, cambiar_pantalla):
     login_button = ElevatedButton(text="Iniciar Sesión", on_click=login)
     mensaje_error = Text("", size=20)
 
-    # Contenedor de la imagen a la izquierda
+# Contenedor de la imagen a la izquierda
+    imagen_path = os.path.join(os.path.dirname(__file__), 'assets', 'inicio_sesion.jpg')
     imagen = Container(
-        content=Image(src="assets/inicio_sesion.jpg", fit=ImageFit.COVER, ),
+        content=Image(src=imagen_path, fit=ImageFit.COVER),
     )
 
     # Contenedor del formulario de inicio de sesión a la derecha
